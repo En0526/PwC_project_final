@@ -9,10 +9,11 @@ from __future__ import annotations
 
 import os
 
-try:
-    import google.generativeai as genai
-except ImportError:
-    genai = None
+from backend.services.gemini_generation import (
+    effective_gemini_model,
+    gemini_sdk_available,
+    generate_content_text,
+)
 
 _ITEM_TYPES = ["Press Releases", "Speeches", "Press Release", "Speech"]
 
@@ -46,7 +47,7 @@ def generate_labuanfsa_visual_report(
 ) -> str:
     api_key = api_key or os.environ.get("GEMINI_API_KEY")
 
-    if api_key and genai:
+    if api_key and gemini_sdk_available():
         ai_report = _ai_visual_report(
             previous_snapshot=previous_snapshot,
             current_snapshot=current_snapshot,
@@ -69,9 +70,7 @@ def _ai_visual_report(
     api_key: str,
     model_name: str | None = None,
 ) -> str | None:
-    model_name = model_name or os.environ.get("AI_SUMMARY_MODEL") or "gemini-1.5-flash"
-    genai.configure(api_key=api_key)
-    model = genai.GenerativeModel(model_name)
+    model = effective_gemini_model(model_name)
 
     curr_items = _extract_items(current_snapshot)
     prev_items = _extract_items(previous_snapshot)
@@ -119,15 +118,14 @@ Labuan FSA 媒體更新
 3. 若首次建立基準，請在重點摘要說明「首次建立監測基準」。
 """
 
-    try:
-        response = model.generate_content(
-            prompt,
-            generation_config={"temperature": 0.1, "max_output_tokens": 600},
-        )
-        text = (getattr(response, "text", "") or "").strip()
-        return text[:2500] if text else None
-    except Exception:
-        return None
+    text = generate_content_text(
+        api_key=api_key,
+        model=model,
+        prompt=prompt,
+        temperature=0.1,
+        max_output_tokens=600,
+    )
+    return text[:2500] if text else None
 
 
 def _basic_visual_report(

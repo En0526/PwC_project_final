@@ -11,10 +11,11 @@ from __future__ import annotations
 import os
 import re
 
-try:
-    import google.generativeai as genai
-except ImportError:
-    genai = None
+from backend.services.gemini_generation import (
+    effective_gemini_model,
+    gemini_sdk_available,
+    generate_content_text,
+)
 
 # 公報條目行的前綴格式（gazette_snapshot_text 產生的格式為「  [類型] 標題」）
 _ITEM_TYPES = ["法規", "行政規則", "公告及送達", "處分", "人事", "其他", "公報"]
@@ -62,7 +63,7 @@ def generate_gazette_visual_report(
     """
     api_key = api_key or os.environ.get("GEMINI_API_KEY")
 
-    if api_key and genai:
+    if api_key and gemini_sdk_available():
         ai_report = _ai_visual_report(
             previous_snapshot=previous_snapshot,
             current_snapshot=current_snapshot,
@@ -89,9 +90,7 @@ def _ai_visual_report(
     api_key: str,
     model_name: str | None = None,
 ) -> str | None:
-    model_name = model_name or os.environ.get("AI_SUMMARY_MODEL") or "gemini-1.5-flash"
-    genai.configure(api_key=api_key)
-    model = genai.GenerativeModel(model_name)
+    model = effective_gemini_model(model_name)
 
     # 只傳公報條目給 AI，避免 AI 把快照欄位當作資料
     curr_items = _extract_items(current_snapshot)
@@ -142,15 +141,14 @@ def _ai_visual_report(
 4. 不要輸出任何移除項目或移除數量。
 """
 
-    try:
-        response = model.generate_content(
-            prompt,
-            generation_config={"temperature": 0.1, "max_output_tokens": 500},
-        )
-        text = (getattr(response, "text", "") or "").strip()
-        return text[:2500] if text else None
-    except Exception:
-        return None
+    text = generate_content_text(
+        api_key=api_key,
+        model=model,
+        prompt=prompt,
+        temperature=0.1,
+        max_output_tokens=500,
+    )
+    return text[:2500] if text else None
 
 
 # ---------------------------------------------------------------------------

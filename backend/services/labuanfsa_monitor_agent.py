@@ -14,10 +14,11 @@ from datetime import datetime
 
 from bs4 import BeautifulSoup
 
-try:
-    import google.generativeai as genai
-except ImportError:
-    genai = None
+from backend.services.gemini_generation import (
+    effective_gemini_model,
+    gemini_sdk_available,
+    generate_content_text,
+)
 
 LABUANFSA_HOST = "labuanfsa.gov.my"
 _MEDIA_PATH = "/resources/media"
@@ -229,12 +230,10 @@ def analyze_labuanfsa_change(
 ) -> str | None:
     """Generate Agent 1 analysis report with Gemini."""
     api_key = api_key or os.environ.get("GEMINI_API_KEY")
-    if not api_key or not genai:
+    if not api_key or not gemini_sdk_available():
         return None
 
-    model_name = model_name or os.environ.get("AI_SUMMARY_MODEL") or "gemini-1.5-flash"
-    genai.configure(api_key=api_key)
-    model = genai.GenerativeModel(model_name)
+    model = effective_gemini_model(model_name)
 
     previous_block = (previous_snapshot or "").strip() or "（本次為首次擷取，無前次資料）"
 
@@ -262,12 +261,11 @@ def analyze_labuanfsa_change(
 - 只關注 Media 列表中的日期、類型、標題。
 """
 
-    try:
-        response = model.generate_content(
-            prompt,
-            generation_config={"temperature": 0.1, "max_output_tokens": 500},
-        )
-        text = (getattr(response, "text", "") or "").strip()
-        return text[:2500] if text else None
-    except Exception:
-        return None
+    text = generate_content_text(
+        api_key=api_key,
+        model=model,
+        prompt=prompt,
+        temperature=0.1,
+        max_output_tokens=500,
+    )
+    return text[:2500] if text else None

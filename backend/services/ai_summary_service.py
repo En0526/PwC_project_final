@@ -1,15 +1,15 @@
 """AI 差異摘要服務（Google AI Studio / Gemini）。"""
 import os
 
-try:
-    import google.generativeai as genai
-except ImportError:
-    genai = None
-
 from backend.services.gazette_monitor_agent import is_gazette_url, analyze_gazette_change
 from backend.services.gazette_diff_agent import generate_gazette_visual_report
 from backend.services.labuanfsa_monitor_agent import is_labuanfsa_url, analyze_labuanfsa_change
 from backend.services.labuanfsa_diff_agent import generate_labuanfsa_visual_report
+from backend.services.gemini_generation import (
+    effective_gemini_model,
+    gemini_sdk_available,
+    generate_content_text,
+)
 
 
 def _env_bool(name: str, default: bool = False) -> bool:
@@ -35,12 +35,10 @@ def generate_diff_summary(
         return None
 
     api_key = api_key or os.environ.get("GEMINI_API_KEY")
-    if not api_key or not genai:
+    if not api_key or not gemini_sdk_available():
         return None
 
-    model_name = model_name or os.environ.get("AI_SUMMARY_MODEL") or "gemini-1.5-flash"
-    genai.configure(api_key=api_key)
-    model = genai.GenerativeModel(model_name)
+    model = effective_gemini_model(model_name)
 
     prompt = f"""你是網站變更摘要助手。請根據給定差異，輸出「精簡、可讀」的繁體中文摘要。
 
@@ -63,17 +61,16 @@ def generate_diff_summary(
 4) 純文字輸出，不要加 Markdown 標題。
 """
 
-    try:
-        response = model.generate_content(
-            prompt,
-            generation_config={"temperature": 0.2, "max_output_tokens": 280},
-        )
-        text = (getattr(response, "text", "") or "").strip()
-        if not text:
-            return None
-        return text[:1000]
-    except Exception:
+    text = generate_content_text(
+        api_key=api_key,
+        model=model,
+        prompt=prompt,
+        temperature=0.2,
+        max_output_tokens=280,
+    )
+    if not text:
         return None
+    return text[:1000]
 
 
 def generate_diff_summary_for_url(

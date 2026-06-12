@@ -4,10 +4,11 @@ from __future__ import annotations
 import os
 import re
 
-try:
-    import google.generativeai as genai
-except ImportError:
-    genai = None
+from backend.services.gemini_generation import (
+    effective_gemini_model,
+    gemini_sdk_available,
+    generate_content_text,
+)
 
 
 def generate_chinatimes_diff_report(
@@ -31,7 +32,7 @@ def generate_chinatimes_diff_report(
         return None
 
     api_key = api_key or os.environ.get("GEMINI_API_KEY")
-    if api_key and genai:
+    if api_key and gemini_sdk_available():
         ai_text = _ai_diff(
             added=added,
             removed=removed,
@@ -99,9 +100,7 @@ def _ai_diff(
     api_key: str,
     model_name: str | None = None,
 ) -> str | None:
-    model_name = model_name or os.environ.get("AI_SUMMARY_MODEL") or "gemini-1.5-flash"
-    genai.configure(api_key=api_key)
-    model = genai.GenerativeModel(model_name)
+    model = effective_gemini_model(model_name)
 
     added_block = "\n".join([f"[{x['time']}] {x['category']} | {x['title']}" for x in added]) or "（無新增）"
     removed_block = "\n".join([f"[{x['time']}] {x['category']} | {x['title']}" for x in removed]) or "（無移除）"
@@ -120,12 +119,11 @@ def _ai_diff(
 4) 最後一句簡短結論
 輸出純文字。
 """
-    try:
-        response = model.generate_content(
-            prompt,
-            generation_config={"temperature": 0.1, "max_output_tokens": 700},
-        )
-        text = (getattr(response, "text", "") or "").strip()
-        return text[:2600] if text else None
-    except Exception:
-        return None
+    text = generate_content_text(
+        api_key=api_key,
+        model=model,
+        prompt=prompt,
+        temperature=0.1,
+        max_output_tokens=700,
+    )
+    return text[:2600] if text else None

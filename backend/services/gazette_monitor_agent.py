@@ -13,10 +13,11 @@ import re
 
 from bs4 import BeautifulSoup
 
-try:
-    import google.generativeai as genai
-except ImportError:
-    genai = None
+from backend.services.gemini_generation import (
+    effective_gemini_model,
+    gemini_sdk_available,
+    generate_content_text,
+)
 
 GAZETTE_HOST = "gazette.nat.gov.tw"
 
@@ -172,12 +173,10 @@ def analyze_gazette_change(
     以繁體中文回傳結構化監測報告。
     """
     api_key = api_key or os.environ.get("GEMINI_API_KEY")
-    if not api_key or not genai:
+    if not api_key or not gemini_sdk_available():
         return None
 
-    model_name = model_name or os.environ.get("AI_SUMMARY_MODEL") or "gemini-1.5-flash"
-    genai.configure(api_key=api_key)
-    model = genai.GenerativeModel(model_name)
+    model = effective_gemini_model(model_name)
 
     has_previous = bool(previous_snapshot and previous_snapshot.strip())
     prev_block = previous_snapshot.strip() if has_previous else "（本次為首次擷取，無前次資料）"
@@ -205,12 +204,11 @@ def analyze_gazette_change(
 若本次為首次擷取，則說明目前狀態即可，並標記「首次建立基準快照」。
 """
 
-    try:
-        response = model.generate_content(
-            prompt,
-            generation_config={"temperature": 0.1, "max_output_tokens": 400},
-        )
-        text = (getattr(response, "text", "") or "").strip()
-        return text[:2000] if text else None
-    except Exception:
-        return None
+    text = generate_content_text(
+        api_key=api_key,
+        model=model,
+        prompt=prompt,
+        temperature=0.1,
+        max_output_tokens=400,
+    )
+    return text[:2000] if text else None

@@ -8,15 +8,15 @@ from __future__ import annotations
 import os
 import re
 
-try:
-    import google.generativeai as genai
-except ImportError:
-    genai = None
-
 from backend.services.oecd_beps_monitor_agent import (
     SECTION_INSIGHTS,
     SECTION_PUBLICATIONS,
     parse_oecd_beps_snapshot,
+)
+from backend.services.gemini_generation import (
+    effective_gemini_model,
+    gemini_sdk_available,
+    generate_content_text,
 )
 
 OECD_BASE = "https://www.oecd.org"
@@ -63,7 +63,7 @@ def generate_oecd_beps_diff_report(
 
     # 嘗試 AI 摘要
     api_key = api_key or os.environ.get("GEMINI_API_KEY")
-    if api_key and genai:
+    if api_key and gemini_sdk_available():
         ai_text = _ai_diff(
             section_diffs=section_diffs,
             has_previous=bool(previous_snapshot),
@@ -179,7 +179,7 @@ def _ai_diff(
     api_key: str,
     model_name: str | None = None,
 ) -> str | None:
-    model_name = model_name or os.environ.get("AI_SUMMARY_MODEL") or "gemini-1.5-flash"
+    model = effective_gemini_model(model_name)
 
     # 組建 AI 提示所需的內容
     blocks: list[str] = []
@@ -230,14 +230,11 @@ def _ai_diff(
 最後一句結論。
 整體不超過 600 字。
 """
-    try:
-        genai.configure(api_key=api_key)
-        model = genai.GenerativeModel(model_name)
-        response = model.generate_content(
-            prompt,
-            generation_config={"temperature": 0.1, "max_output_tokens": 900},
-        )
-        text = (getattr(response, "text", "") or "").strip()
-        return text[:3000] if text else None
-    except Exception:
-        return None
+    text = generate_content_text(
+        api_key=api_key,
+        model=model,
+        prompt=prompt,
+        temperature=0.1,
+        max_output_tokens=900,
+    )
+    return text[:3000] if text else None

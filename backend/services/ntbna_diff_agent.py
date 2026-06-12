@@ -4,10 +4,11 @@ from __future__ import annotations
 import os
 import re
 
-try:
-    import google.generativeai as genai
-except ImportError:
-    genai = None
+from backend.services.gemini_generation import (
+    effective_gemini_model,
+    gemini_sdk_available,
+    generate_content_text,
+)
 
 
 def generate_ntbna_diff_report(
@@ -31,7 +32,7 @@ def generate_ntbna_diff_report(
         return None
 
     api_key = api_key or os.environ.get("GEMINI_API_KEY")
-    if api_key and genai:
+    if api_key and gemini_sdk_available():
         ai_text = _ai_ntbna_diff(
             added=added,
             removed=removed,
@@ -123,9 +124,7 @@ def _ai_ntbna_diff(
     api_key: str,
     model_name: str | None = None,
 ) -> str | None:
-    model_name = model_name or os.environ.get("AI_SUMMARY_MODEL") or "gemini-1.5-flash"
-    genai.configure(api_key=api_key)
-    model = genai.GenerativeModel(model_name)
+    model = effective_gemini_model(model_name)
 
     site = _extract_field(current_snapshot, "站點") or "財政部北區國稅局"
     section = _extract_field(current_snapshot, "區塊") or "本局新聞稿"
@@ -150,12 +149,11 @@ def _ai_ntbna_diff(
 4) 有移除就列最多 5 則
 5) 最後一句結論（例如：建議查看最新 1-2 則重點）
 """
-    try:
-        response = model.generate_content(
-            prompt,
-            generation_config={"temperature": 0.1, "max_output_tokens": 600},
-        )
-        text = (getattr(response, "text", "") or "").strip()
-        return text[:2500] if text else None
-    except Exception:
-        return None
+    text = generate_content_text(
+        api_key=api_key,
+        model=model,
+        prompt=prompt,
+        temperature=0.1,
+        max_output_tokens=600,
+    )
+    return text[:2500] if text else None

@@ -373,23 +373,23 @@ def extract_oecd_topics_insights_and_publications_snapshot(
 ) -> SectionSnapshot | None:
     """
     OECD /en/topics/... pages: «Latest insights» through «Related publications»
-    (stop before «Related events»).
+    (stop before «Related events»). Markers matched case-insensitively.
     """
     ft = (full_text or "").strip()
     if not ft:
         return None
-    start_marker = "Latest insights"
-    end_marker = "Related events"
-    i = ft.find(start_marker)
-    if i < 0:
+    m_start = re.search(r"(?i)Latest\s+insights", ft)
+    if not m_start:
         return None
-    j = ft.find(end_marker, i + len(start_marker))
-    if j < 0:
-        block = ft[i:].strip()
+    i = m_start.start()
+    rest = ft[i:]
+    m_end = re.search(r"(?i)(^|\n)\s*Related\s+events\b", rest)
+    if m_end:
+        block = rest[: m_end.start()].strip()
     else:
-        block = ft[i:j].strip()
+        block = rest.strip()
 
-    if len(block) < 40 or "Related publications" not in block:
+    if len(block) < 40 or not re.search(r"(?i)Related\s+publications", block):
         return None
 
     lines = [

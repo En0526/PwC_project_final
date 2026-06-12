@@ -1,168 +1,146 @@
-# 訂閱網站更新監測系統
+# 網站更新監測系統（AI Agent 版）
 
-使用者登入後可新增「追蹤網站」，並描述**要觀看是否有更新的部分**（例如：公告列表、最新消息區塊）。系統會定時擷取該區塊內容，有變更時可查看差異；並可選用 **Google AI Studio (Gemini)** 依你的描述從網頁中擷取對應區塊。
+這個專案的目標很簡單：  
+**幫你自動盯網站有沒有更新，並把變更整理成看得懂的重點。**
 
-## 功能
-
-- **登入 / 註冊**：使用信箱與密碼
-- **新增追蹤**：輸入網址、自訂名稱、選填「要觀看的區塊」描述
-- **定時檢查**：背景每 N 分鐘檢查一次所有訂閱（可在 `.env` 設定）
-- **立即檢查**：手動觸發單一訂閱的檢查
-- **差異比對**：有變更時可點「看差異」查看前後內容差異摘要
-- **Google AI Studio**：若有設定 `GEMINI_API_KEY`，會用 Gemini 依你的描述從網頁擷取關注區塊，提高比對精準度
-
-## 環境需求
-
-- Python 3.10+
-- （選用）Google AI Studio API Key：用於依描述擷取網頁區塊
-
-## 安裝與執行
-
-```bash
-cd D:\NTU_AI
-python -m venv venv
-venv\Scripts\activate
-pip install -r requirements.txt
-```
-
-複製環境變數範例並編輯：
-
-```bash
-copy .env.example .env
-```
-
-在 `.env` 中設定：
-
-- `FLASK_SECRET_KEY`：任意隨機字串（生產環境必填）
-- `GEMINI_API_KEY`：（選填）在 [Google AI Studio](https://aistudio.google.com/apikey) 取得
-- `CHECK_INTERVAL_MINUTES`：（選填）排程檢查間隔（系統全域定時觸發），預設 30 分鐘；如要立即就能用訂閱自訂「每分鐘」，可設定為 1 分鐘。
-
-新增訂閱時可指定：
-- 每分鐘（開發用）
-- 每天
-- 每周
-- 每季
-- 每半年
-- 每年
-
-建立資料庫並啟動：
-
-```bash
-python app.py
-```
-
-瀏覽器開啟：<http://127.0.0.1:5000>  
-未登入會導向登入頁，註冊後即可在「我的追蹤網站」新增網址與觀看描述。
-
-## 專案結構
-
-```
-D:\NTU_AI\
-├── app.py                 # 程式進入點
-├── requirements.txt
-├── .env.example
-├── backend/
-│   ├── config.py          # 設定
-│   ├── __init__.py        # Flask app 建立、登入管理
-│   ├── scheduler.py       # 定時檢查訂閱
-│   ├── models/            # User, Subscription, Snapshot
-│   ├── routes/            # auth, subscriptions, pages
-│   └── services/
-│       ├── scraper.py     # 抓取網頁、擷取關注區塊
-│       ├── gemini_service.py  # 使用 Gemini 解析觀看區塊
-│       └── diff_service.py     # 文字差異比對
-└── frontend/
-    ├── templates/         # 登入、註冊、儀表板
-    └── static/            # style.css, dashboard.js
-```
-
-## 與同學共編（Git + GitHub）
-
-用 **Git + GitHub** 把專案放到雲端，兩人可各自 clone、改完再 push，是最常見的共編方式。
-
-### 你（專案擁有者）第一次設定
-
-1. **在專案目錄初始化 Git 並提交**
-   ```bash
-   cd D:\NTU_AI
-   git init
-   git add .
-   git commit -m "Initial: 訂閱網站更新監測系統"
-   ```
-
-2. **在 GitHub 建立新倉庫**
-   - 登入 [GitHub](https://github.com) → 點右上角 **+** → **New repository**
-   - 名稱可填 `NTU_AI` 或自訂，**不要**勾選 "Add a README"（本地已有）
-   - 建立後記下倉庫網址，例如：`https://github.com/En0526/PwC_project.git`
-
-3. **把本地專案推上去**
-   ```bash
-   git remote add origin https://github.com/En0526/PwC_project.git
-   git branch -M main
-   git push -u origin main
-   ```
-
-4. **加同學為共同開發者**
-   - 進該倉庫 → **Settings** → **Collaborators** → **Add people**
-   - 輸入同學的 GitHub 帳號，送出邀請；同學接受後即可 push。
-
-### 同學第一次參與（協作者要怎麼用）
-
-**前提**：專案擁有者（En0526）已經在 GitHub 倉庫的 **Settings → Collaborators** 加你為共同開發者，並且你已在 GitHub 接受邀請。
-
-1. **安裝 Git**（若尚未安裝）：[git-scm.com](https://git-scm.com/)  
-   安裝 Python 3.10+（若尚未安裝）：[python.org](https://www.python.org/)
-
-2. **複製專案到本機**（請用實際倉庫名稱，目前為 `PwC_project`）
-   ```bash
-   git clone https://github.com/En0526/PwC_project.git
-   cd PwC_project
-   ```
-
-3. **建環境、裝套件、設定**
-   - **Windows（PowerShell）**：在專案目錄執行  
-     `.\setup_env.ps1`  
-     若沒有該腳本，就手動執行：
-     ```powershell
-   python -m venv venv
-   .\venv\Scripts\activate
-   pip install -r requirements.txt
-   copy .env.example .env
-   ```
-   - **Mac / Linux**：
-     ```bash
-   python3 -m venv venv
-   source venv/bin/activate
-   pip install -r requirements.txt
-   cp .env.example .env
-   ```
-   - 編輯 `.env`，至少設定 `FLASK_SECRET_KEY`（任意隨機字串）。
-
-4. **啟動專案**
-   ```bash
-   python app.py
-   ```
-   瀏覽器開 <http://127.0.0.1:5000> 即可使用。
-
-之後要改程式：先 `git pull` 拉最新 → 改完 → `git add .` → `git commit -m "說明"` → `git push`。
-
-### 日常共編流程
-
-| 誰 | 要做的事 |
-|----|----------|
-| **要改程式前** | 先拉最新：`git pull` |
-| **改完後** | `git add .` → `git commit -m "做了什麼"` → `git push` |
-| **對方有 push** | 自己改之前或改完後執行 `git pull`，有衝突再一起解。 |
-
-建議：兩人盡量**不要同時改同一個檔案同一段**，可事先說好誰負責哪一塊（例如你負責後端、同學負責前端），或一人改完 push 後另一人再 pull 再改，可減少衝突。
-
-### 其他共編方式（選用）
-
-- **VS Code / Cursor Live Share**：一人開專案後邀請對方即時連線，可同時編輯同一份檔案，適合一起除錯或討論。
-- **GitLab**：若學校或團隊用 GitLab，步驟同上，只是把 `github.com` 換成你們的 GitLab 網址即可。
+你可以新增任何想追蹤的網址，設定「想看哪個區塊」，系統就會定時抓取、比對、記錄，必要時寄通知。
 
 ---
 
-## 通知擴充
+## 這個專案可以做什麼
 
-目前「有變更」時僅在資料庫記錄並可於網頁上點「看差異」。若要改成 Email / Line / 推播通知，可在 `backend/scheduler.py` 的 `run_check_subscription` 中，於 `if last and last.content_hash != new_hash:` 區塊內加上發送邏輯（例如呼叫 SendGrid、Line Notify 等）。
+- 會員註冊 / 登入後管理自己的追蹤清單
+- 新增追蹤網址，指定要監看的區塊（例如：最新公告、新聞列表、法規頁面）
+- 系統排程自動檢查，偵測內容是否變更
+- 產生差異摘要（不是只有 raw diff，會盡量整理成可讀敘述）
+- 在儀表板查看歷史快照與變更紀錄
+- 可選擇啟用 Email 通知（SMTP）
+- 支援 `Gemini` / `Hugging Face` 作為 LLM 提供者
+
+---
+
+## 專案架構（先看這段就懂）
+
+整體是「Flask 後端 + HTML/JS 前端 + SQLite」：
+
+1. 前端介面讓使用者管理訂閱與查看更新結果  
+2. 後端排程器定時執行每個訂閱的抓取與比對  
+3. 抓取結果存成快照（Snapshot）  
+4. 有變更時產生通知內容，寫入資料庫並可發信
+
+### 主要目錄
+
+```text
+.
+├── app.py
+├── backend/
+│   ├── models/                  # User / Subscription / Snapshot / Notification
+│   ├── routes/                  # 登入、訂閱、頁面 API
+│   ├── scheduler.py             # 排程與檢查主流程
+│   └── services/
+│       ├── scraper.py           # 抓頁 + 抽取內容 + fallback
+│       ├── page_target_agent.py # Agent 3：頁面理解與目標對位
+│       ├── gemini_service.py    # Agent 1：依指令擷取監看內容
+│       ├── change_agent.py      # Agent 2：變更比對與摘要
+│       ├── llm_narrative.py     # 將機械摘要改寫成自然語言
+│       └── ...                  # 各站點專屬 monitor/diff agents
+└── frontend/
+    ├── templates/
+    └── static/
+```
+
+---
+
+## 使用方式（第一次用照著做）
+
+### 1) 安裝與啟動（Windows PowerShell）
+
+```powershell
+git clone https://github.com/En0526/PwC_project_final.git
+cd PwC_project_final
+
+python -m venv venv
+.\venv\Scripts\Activate.ps1
+pip install -r requirements.txt
+
+Copy-Item .env.example .env
+python app.py
+```
+
+啟動後開啟：<http://127.0.0.1:5000>
+
+> 如果 `Activate.ps1` 被擋，先執行：  
+> `Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass`
+
+### 2) 實際操作流程
+
+1. 註冊 / 登入帳號  
+2. 新增一筆追蹤網址  
+3. 輸入「要觀看的區塊描述」（可空白）  
+4. 設定檢查頻率  
+5. 等排程或手動觸發檢查  
+6. 在儀表板查看是否有變更與摘要內容
+
+### 3) 可選設定（`.env`）
+
+- `AI_PROVIDER=gemini` 或 `huggingface`
+- `GEMINI_API_KEY` / `HF_API_TOKEN`：啟用 AI 擷取與 AI 摘要
+- `CHECK_INTERVAL_MINUTES`：預設檢查頻率
+- `SMTP_HOST`、`SMTP_FROM`、`SMTP_PASSWORD`：啟用 Email 通知
+
+沒填 AI key 也能跑，只是會退回較基礎的文字比對流程。
+
+---
+
+## 功能重點（給第一次接手的人）
+
+- **訂閱管理**：每位使用者有自己的監測清單與設定
+- **多種來源處理**：一般 HTML、RSS/Atom、以及部分站點專屬解析流程
+- **反爬/動態頁 fallback**：requests 失敗可切 Playwright，降低抓不到內容的機率
+- **差異判斷與去重**：用內容 hash + diff 判斷是否真的有更新，避免重複通知
+- **通知機制**：變更寫入 Notification，可彙整並寄送 Email
+- **歷史可追溯**：每次抓取保留 Snapshot，可回看前後變化
+
+---
+
+## 核心所在：三個 AI Agent
+
+這個專案最核心的設計，是把「看網頁更新」拆成 3 個 AI Agent，各自做不同工作：
+
+### Agent 1：網頁區塊擷取 Agent（Extraction）
+
+- 位置：`backend/services/gemini_service.py`
+- 任務：根據使用者描述，從整頁文字中擷取「真正要監看」的內容
+- 輸出：一段可穩定比對的監看文本（供快照與 hash）
+
+### Agent 2：變更比對解讀 Agent（Change Reporter）
+
+- 位置：`backend/services/change_agent.py`
+- 任務：比較前後快照，產生可讀的更新重點（含站點專屬 diff 策略）
+- 輸出：通知可直接使用的變更摘要（必要時再交給敘事改寫）
+
+### Agent 3：頁面理解與目標對位 Agent（Page Target Resolver）
+
+- 位置：`backend/services/page_target_agent.py`
+- 任務：先理解頁面有哪些區塊，再把使用者目標對位，產生更精準的擷取指令給 Agent 1
+- 輸出：`extraction_instruction`（提升擷取精準度，降低抓錯區塊）
+
+### 三者怎麼串起來
+
+`Agent 3（先理解頁面）` → `Agent 1（擷取要監測的內容）` → `Agent 2（比對並寫成摘要）`
+
+這樣的好處是：  
+不是只做「字串 diff」，而是更接近「人真的在看公告更新」的流程。
+
+---
+
+## 常見問題
+
+**Q：5000 埠被佔用怎麼辦？**  
+改 `app.py` 的啟動埠（例如 `5001`）。
+
+**Q：Playwright 相關套件安裝失敗？**  
+可先跑核心功能；需要動態頁時再執行 `playwright install chromium`。
+
+**Q：第一次啟動需要手動建資料庫嗎？**  
+不用。首次啟動會自動建立 `instance/site.db`。
