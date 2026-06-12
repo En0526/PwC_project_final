@@ -91,6 +91,8 @@ python app.py
 - `HF_API_TOKEN`：使用 Hugging Face 時必填
 - `CHECK_INTERVAL_MINUTES`：預設檢查頻率
 - `SMTP_HOST`、`SMTP_FROM`、`SMTP_PASSWORD`：啟用 Email 通知
+- `SMTP_FROM`：寄件者地址（必填，建議與 `SMTP_USERNAME` 相同）
+- `AUTO_SEND_NOTIFICATION_REPORT=1`：有更新時自動寄送彙整信
 
 範例（擇一）：
 
@@ -102,6 +104,14 @@ GEMINI_API_KEY=your_gemini_key
 # 或使用 Hugging Face
 # AI_PROVIDER=huggingface
 # HF_API_TOKEN=your_hf_token
+
+# Email（Gmail 範例）
+SMTP_HOST=smtp.gmail.com
+SMTP_PORT=587
+SMTP_USERNAME=your_email@gmail.com
+SMTP_PASSWORD=your_16_digit_app_password
+SMTP_FROM=your_email@gmail.com
+AUTO_SEND_NOTIFICATION_REPORT=1
 ```
 
 ---
