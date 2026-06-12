@@ -81,14 +81,28 @@ python app.py
 5. 等排程或手動觸發檢查  
 6. 在儀表板查看是否有變更與摘要內容
 
-### 3) 可選設定（`.env`）
+### 3) 重要：`.env` 設定（AI 功能需 Key）
+
+> **提醒：要使用 AI 擷取與 AI 摘要，必須先設定 API Key。**  
+> 沒有設定 Key 時，系統仍可運作，但會改用較基礎的文字比對（不啟用 AI）。
 
 - `AI_PROVIDER=gemini` 或 `huggingface`
-- `GEMINI_API_KEY` / `HF_API_TOKEN`：啟用 AI 擷取與 AI 摘要
+- `GEMINI_API_KEY`：使用 Gemini 時必填
+- `HF_API_TOKEN`：使用 Hugging Face 時必填
 - `CHECK_INTERVAL_MINUTES`：預設檢查頻率
 - `SMTP_HOST`、`SMTP_FROM`、`SMTP_PASSWORD`：啟用 Email 通知
 
-沒填 AI key 也能跑，只是會退回較基礎的文字比對流程。
+範例（擇一）：
+
+```env
+# 使用 Gemini
+AI_PROVIDER=gemini
+GEMINI_API_KEY=your_gemini_key
+
+# 或使用 Hugging Face
+# AI_PROVIDER=huggingface
+# HF_API_TOKEN=your_hf_token
+```
 
 ---
 
